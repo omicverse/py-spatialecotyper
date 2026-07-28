@@ -640,8 +640,9 @@ def aggregate_recover_models(model_list, delta_threshold: float = 0.01,
         cnt = gene_df.value_counts().reset_index(name="n")
         cnt["frac"] = cnt["n"] / len(models)
         cnt = cnt[cnt["frac"] > min_model_fraction]
-        features = list(pd.unique([f"{g}__pos" for g in cnt["Gene"]]
-                                  + [f"{g}__neg" for g in cnt["Gene"]]))
+        features = list(pd.unique(np.asarray(
+            [f"{g}__pos" for g in cnt["Gene"]]
+            + [f"{g}__neg" for g in cnt["Gene"]], dtype=object)))
         ses = list(pd.unique(np.concatenate([np.asarray(s, dtype=object)
                                              for _, _, s in Ws])))
         num = np.zeros((len(features), len(ses)))
