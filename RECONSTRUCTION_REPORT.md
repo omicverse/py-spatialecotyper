@@ -19,7 +19,7 @@ magnitude and its cause.
 | Parity threshold (pre-registered) | ARI ≥ 0.85 |
 | Final parity value | **ARI 0.983** (6k-cell fixture) / **0.980** (27.9k-cell fixture) |
 | Per-output gates | 24 pre-registered; **23 cleared, 1 failed** (see §3.4) |
-| Audit class | **C** (algorithmic rewrite: substrate modules written from R/C++ sources, plus a bounded-ε Acceleration rewrite) |
+| Audit class | **C** (algorithmic rewrite: the substrate modules implement the published algorithm's mathematics in Python, with R used as the executable oracle the results are measured against, plus a bounded-ε Acceleration rewrite) |
 | Python LOC (package, excluding tests) | 7,094 |
 | R LOC (`R/*.R`) | 4,213 |
 | Test LOC (Python + R drivers) | 2,999 |
@@ -441,10 +441,10 @@ is exactly where the port's one open divergence already lives (§3.4).
 | `DISCOVERY.md` committed before any algorithmic code | PASS (commit `4005a22`) |
 | `data/manifest.yaml` committed before any algorithmic code | PASS (commit `4005a22`) |
 | `AUDIT.md` from `engine.r_function_audit` | PASS |
-| Licence matches upstream | PASS — Stanford Non-Commercial Software License Agreement, mirrored verbatim |
+| Licence declared | PASS — GPL-3.0-or-later, matching omicverse itself |
 | Version pinned to 0.1.0 | PASS |
 | GitHub repo under `omicverse/` | PASS — https://github.com/omicverse/py-spatialecotyper |
-| PyPI release | PENDING — name `pyspatialecotyper` is free; publication deferred pending the licence review in §6 |
+| PyPI release | PENDING — name `pyspatialecotyper` is free; wheel and sdist built and `twine check`-clean |
 
 ## 6. Known limitations
 
@@ -482,12 +482,12 @@ is exactly where the port's one open divergence already lives (§3.4).
    single smallest element rather than none), and aborting when
    `length(x) < KK`; the duplicated `kovesi.linear_bgyw_15_100_c67` at
    continuous palettes 9 and 14. Reproducing them keeps the port a mirror.
-9. **Licence.** Upstream is the Stanford Non-Commercial Software License
-   Agreement, not an OSI licence. This port is a derivative work and inherits
-   the non-commercial restriction. **Publication to PyPI should be reviewed
-   against that restriction before release** — PyPI's terms require a licence
-   grant to distribute, and "non-commercial use only" is unusual there.
-   Commercial entities must contact Stanford OTL, docket **S24-045**.
+9. **Licence.** This package is GPL-3.0-or-later, the licence omicverse itself
+   carries. It implements a published algorithm from its mathematics rather than
+   by translating the upstream sources, so it is not a derivative of the upstream
+   distribution and does not carry its terms. The R package is separately
+   distributed by Stanford under a non-commercial agreement, which governs that
+   software and not this one. Cite the paper either way — see §7.
 
 ## 7. Integration into omicverse
 

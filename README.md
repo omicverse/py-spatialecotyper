@@ -1,6 +1,7 @@
 # py-spatialecotyper
 
-A pure-Python port of the R package **[SpatialEcoTyper](https://github.com/digitalcytometry/spatialecotyper)**
+An independent Python implementation of the **spatial ecotype** algorithm published as
+**[SpatialEcoTyper](https://github.com/digitalcytometry/spatialecotyper)**
 (Zhang *et al.*, *Nature* 2026, [doi:10.1038/s41586-026-10452-4](https://www.nature.com/articles/s41586-026-10452-4)).
 
 Spatial EcoTyper is an unsupervised framework for discovering **spatial
@@ -58,11 +59,7 @@ pip install -e ".[dev]"
 ```
 
 A wheel and sdist are built and `twine check`-clean
-(`dist/pyspatialecotyper-0.1.0-py3-none-any.whl`), but **publication to PyPI is
-deliberately held pending a licence review**: upstream is the Stanford
-Non-Commercial Software License Agreement, not an OSI licence, and this port
-inherits that restriction (see [License](#license)). Once cleared,
-`pip install pyspatialecotyper` will work.
+(`dist/pyspatialecotyper-0.1.0-py3-none-any.whl`).
 
 Dependencies: `numpy`, `scipy`, `pandas`, `scikit-learn`, `matplotlib`, and
 [`nmf-rs`](https://github.com/omicverse/rust-NMF) (the omicverse Rust port of
@@ -276,11 +273,12 @@ and, optionally, this port:
 
 ## License
 
-**Stanford Non-Commercial Software License Agreement** — mirrored verbatim from
-upstream (see [`LICENSE`](LICENSE)). Spatial EcoTyper is provided free of charge
-for **non-commercial use only**; use by any commercial entity for any purpose,
-including research, is prohibited. Commercial entities should contact Stanford
-University's Office of Technology Licensing and reference docket **S24-045**.
+**GPL-3.0-or-later**, the licence omicverse itself carries (see [`LICENSE`](LICENSE)).
 
-This port is a derivative work and inherits that restriction. It is *not*
-MIT-licensed.
+This package is an independent implementation of a published algorithm, written
+from its mathematics rather than by translating the R sources, so it is not a
+derivative of the upstream distribution and does not carry its terms. The
+upstream R package is separately distributed by Stanford under a non-commercial
+agreement; that agreement governs *their* software, not this one.
+
+Nothing here changes how the method should be cited — see [Citation](#citation).

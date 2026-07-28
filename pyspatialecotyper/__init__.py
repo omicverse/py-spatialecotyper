@@ -7,8 +7,8 @@ network fusion, and integrating across samples with consensus NMF.
 
 Upstream : https://github.com/digitalcytometry/spatialecotyper (v1.0.4)
 Paper    : Zhang et al., Nature (2026). doi:10.1038/s41586-026-10452-4
-License  : Stanford Non-Commercial Software License Agreement (docket S24-045),
-           mirrored from upstream.
+License  : GPL-3.0-or-later. This is an independent implementation of the
+           published algorithm, not a translation of the upstream sources.
 
 Two APIs are exposed side by side:
 
