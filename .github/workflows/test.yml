@@ -1,0 +1,59 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Import surface
+        run: |
+          python -c "
+          import pyspatialecotyper as P
+          missing = [n for n in P.__all__ if not hasattr(P, n)]
+          assert not missing, missing
+          print(P.__version__, len(P.__all__), 'exports OK')
+          print(len(P.R_FUNCTION_MAP), 'R->Python mappings')
+          "
+
+      - name: Tests
+        # The R-parity tests skip cleanly when reference_out/ is absent (it is
+        # gitignored -- 615 MB of R dumps). What runs here is everything that
+        # does not need R: the R-RNG stream check against values captured from
+        # R 4.4.3, the Seurat Louvain port against its own dense reference, the
+        # 323 palette cases against values captured from pals 1.10, and the
+        # plotting smoke tests.
+        env:
+          MPLBACKEND: Agg
+        run: pytest -q -rs
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+          twine check dist/*

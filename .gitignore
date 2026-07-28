@@ -15,7 +15,8 @@ data/*.tsv.gz
 data/*.rds
 data/*.npz
 data/raw/
-reference_out/
+reference_out/*
+!reference_out/palettes.json
 examples/SpatialEcoTyper_results/
 
 # IDE

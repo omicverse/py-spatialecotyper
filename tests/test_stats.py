@@ -36,12 +36,22 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
 
-# The parity metrics live in the rebuild engine, not in this repo.
-_ENGINE = os.path.join(os.path.dirname(ROOT), "omicverse-rebuildr")
+# The parity metrics live in the omicverse-rebuildr kit, not in this repo. On a
+# fresh checkout (or in CI) the kit is absent and every R-parity test here would
+# skip anyway for want of reference_out/stats, so make the import soft rather
+# than letting collection fail.
+_ENGINE = os.environ.get(
+    "OMICVERSE_REBUILDR",
+    os.path.join(os.path.dirname(ROOT), "omicverse-rebuildr"))
 if os.path.isdir(_ENGINE):
     sys.path.insert(0, _ENGINE)
 
-from engine.parity_metrics import compute_parity, is_pass       # noqa: E402
+try:
+    from engine.parity_metrics import compute_parity, is_pass   # noqa: E402
+except ImportError:                                             # pragma: no cover
+    pytest.skip("omicverse-rebuildr engine not on the path; set "
+                "OMICVERSE_REBUILDR to the kit checkout to run the R-parity "
+                "tests", allow_module_level=True)
 from rio import read_dense, read_df, read_json, read_sparse_raw  # noqa: E402
 from pyspatialecotyper import rrandom, stats                     # noqa: E402
 
