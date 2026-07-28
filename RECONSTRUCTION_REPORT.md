@@ -25,7 +25,7 @@ magnitude and its cause.
 | Test LOC (Python + R drivers) | 2,999 |
 | Wall-clock speedup vs R | **3.0x** on the full 27,907-cell fixture (84.1 s vs 251.8 s); **4.1x** on `Colocalization` |
 | Memory tractability gain | No; both implementations are comfortably in RAM at this scale. |
-| Test suite | **390 passed, 1 xfailed** (`pytest -q`, 58 s) |
+| Test suite | **397 passed, 1 xfailed** (`pytest -q`, 49 s) |
 
 ## 2. R function coverage audit
 
@@ -361,7 +361,7 @@ Rscript tests/r_nmfclust_driver.R  reference_out/nmf     # separate process, see
 Rscript tests/r_stats_driver.R     reference_out/stats
 Rscript tests/r_integration_driver.R data reference_out/integ
 
-pytest tests/ -q                    # 390 passed, 1 xfailed
+pytest tests/ -q                    # 397 passed, 1 xfailed
 python tests/stage_check.py reference_out/ci
 python tests/nmf_check.py  reference_out/nmf
 python tests/bench.py      reference_out/ci
@@ -372,6 +372,9 @@ python tests/bench.py      reference_out/ci
 ### 4.1 Two-plot evaluation
 
 ![evolution](examples/evolution.png)
+
+Per-iteration narrative, one section per iteration including the rejected one:
+[`examples/evolution.ipynb`](examples/evolution.ipynb).
 
 Rendered from [`ITERATION_LOG.md`](ITERATION_LOG.md) by
 `python -m engine.plot_evolution --port-dir .`. Top panel: wall-clock per
@@ -413,7 +416,7 @@ is exactly where the port's one open divergence already lives (§3.4).
 | Check | Status |
 |---|---|
 | `pip install` from the built wheel in a clean target dir | PASS (`pyspatialecotyper-0.1.0-py3-none-any.whl`, imports and runs) |
-| `pytest -q` | PASS — **390 passed, 1 xfailed** in 58 s |
+| `pytest -q` | PASS — **397 passed, 1 xfailed** in 49 s; without the (gitignored) R dumps, 341 passed & 31 skipped |
 | `examples/compare_R_vs_Python.ipynb` (6-section schema, outputs committed) | PASS |
 | `examples/tutorial_melanoma.ipynb` (one subsection per public function, outputs committed) | PASS |
 | `examples/function_by_function_R_parity.ipynb` (R-Python parameter dictionary, outputs committed) | PASS |
