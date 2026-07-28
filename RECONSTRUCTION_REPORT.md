@@ -193,6 +193,14 @@ The reconstructed pipeline in `tests/r_reference_driver.R` and R's own public
 between dumps `12_se_spot` and `13_se_spot`), confirming the driver is a
 faithful stand-in.
 
+`multi_spatial_ecotyper` (the `MultiSpatialEcoTyper` end-to-end path) was also
+exercised in full on 5,000-cell crops of both samples: 9.9 s, 73 spatial
+clusters, and the rank-selection rule picked `bestK = 4` from cophenetic
+coefficients 0.952 / 0.900 / 0.864 at K = 4 / 5 / 6 — i.e. the largest rank
+above `min.coph = 0.95`, which is what the R code does. All four conserved
+ecotypes were populated from **both** samples (SKCM/CRC cluster counts
+12/11, 12/7, 9/5, 7/10), which is the behaviour the method exists to produce.
+
 ### 3.3 Component-level parity (each function fed R's own input)
 
 | Component | Measured |
