@@ -1,0 +1,275 @@
+# =====================================================================
+# Pre-registered parity gate for `py-spatialecotyper`
+#
+# COMMITTED BEFORE ANY ALGORITHMIC PYTHON CODE WAS WRITTEN.
+# Read-only during Step 3 (Equivalence + Acceleration) and Step 4.
+# Thresholds MUST NOT be tightened or loosened to make the port pass.
+# =====================================================================
+
+package: py-spatialecotyper
+upstream:
+  name: SpatialEcoTyper
+  version: "1.0.4"
+  source: GitHub
+  url: https://github.com/digitalcytometry/spatialecotyper
+  paper: "Zhang et al., Nature (2026). doi:10.1038/s41586-026-10452-4"
+  license: "STANFORD NON-COMMERCIAL SOFTWARE LICENSE AGREEMENT (docket S24-045)"
+
+# Primary algorithm class for the port as a whole. SpatialEcoTyper is a
+# multi-output pipeline, so the real gate is the per-output table below and
+# ALL blocks must pass. The headline class is the one for the terminal
+# scientific output (recurrent spatial ecotype labels).
+algorithm_class: clustering
+parity_threshold: 0.85
+
+# --------------------------------------------------------------------
+# Canonical fixtures — public, downloadable, deterministic.
+# --------------------------------------------------------------------
+fixture:
+  path: data/Melanoma1_subset_counts.tsv.gz
+  meta: data/Melanoma1_subset_scmeta.tsv
+  source: "https://spatialecotyper.stanford.edu/inc/inc.public.vignettes.php?file=Melanoma1_subset_counts.tsv.gz"
+  description: "Vizgen MERSCOPE human melanoma patient 1 subset; 500 genes x 27,907 cells, 9 non-malignant cell types, Tumor/Stroma region labels. The fixture used by upstream Tutorial 1."
+  expected_shape: [500, 27907]
+
+second_fixture:
+  path: data/CRC2_subset_counts.tsv.gz
+  meta: data/CRC2_subset_scmeta.tsv
+  source: "https://spatialecotyper.stanford.edu/inc/inc.public.vignettes.php?file=CRC2_subset_counts.tsv.gz"
+  description: "Vizgen MERSCOPE colorectal cancer sample 2 subset, 38,080 cells. Second sample for the multi-sample integration gate (upstream Tutorial 2)."
+
+# Sub-fixture used for the fast/CI parity gate: a spatially contiguous
+# crop of the melanoma fixture, so `pytest -q` finishes in minutes.
+ci_fixture:
+  path: data/ci_fixture.npz
+  description: "Deterministic contiguous spatial crop of Melanoma1_subset (all cells whose X,Y fall in the first quadrant of the tissue bounding box), same genes."
+
+reference_command: tests/r_reference_driver.R
+seed: 1              # IntegrateSpatialEcoTyper / Integrate / nmfClustering default
+nmf_seed: 2024       # NMFGenerateWList / nmfClustering default
+seurat_seed: 42      # Seurat RunPCA / RunUMAP default seed.use
+louvain_seed: 0      # Seurat FindClusters random.seed default
+
+# --------------------------------------------------------------------
+# Per-output gates. ALL must pass.
+#
+# `metric` values map onto engine/parity_metrics.py::compute_parity classes.
+# `factorization` is a port-local extension of the taxonomy for NMF outputs:
+#   sign-/permutation-invariant — columns of W (rows of H) are matched to the
+#   reference by Hungarian assignment on the |Pearson| correlation matrix, and
+#   the reported statistic is the MEAN matched |Pearson| across factors.
+#   Registered here because PARITY_TAXONOMY.md has no matrix-factorisation row.
+# --------------------------------------------------------------------
+outputs:
+
+  # ---------- Tier 1: deterministic kernels (same input in, same out) ----------
+  - name: preprocess_st
+    r_function: PreprocessST
+    type: "sparse matrix + data.frame"
+    metric: deterministic-strict
+    threshold: 1.0e-13
+    note: "Pure filtering; must be bit-identical."
+
+  - name: znorm
+    r_function: Znorm
+    type: "dense matrix (genes x cells)"
+    metric: deterministic-standard
+    threshold: 1.0e-8
+
+  - name: rank_sparse
+    r_function: rankSparse
+    type: "sparse matrix"
+    metric: deterministic-strict
+    threshold: 1.0e-13
+
+  - name: matrix_multiply
+    r_function: matrixMultiply
+    type: "dense/sparse matrix"
+    metric: deterministic-standard
+    threshold: 1.0e-8
+
+  - name: spatial_metacells
+    r_function: GetSpatialMetacells
+    type: "matrix (genes x [neighbourhood..celltype])"
+    metric: deterministic-standard
+    threshold: 1.0e-8
+    note: "KNN weight matrix is unweighted + column-normalised, then one sparse matmul. No decomposition on the path."
+
+  - name: similarity_network
+    r_function: getSN / GetSNList
+    type: "list of sparse matrices"
+    metric: deterministic-standard
+    threshold: 1.0e-8
+    note: "Compared with R's own PC embeddings fed to both sides, isolating the KNN + inverse-distance step."
+
+  - name: snf_fused
+    r_function: SNF2
+    type: "sparse matrix"
+    metric: deterministic-standard
+    threshold: 1.0e-8
+    note: "Compared with R's own similarity-network list fed to both sides, isolating the diffusion."
+
+  - name: infer_ncells
+    r_function: InferNCells
+    type: "integer vector"
+    metric: deterministic-strict
+    threshold: 1.0e-13
+
+  - name: partition_tissue
+    r_function: PartitionTissue
+    type: "character vector"
+    metric: classification
+    threshold: 1.0
+
+  - name: compute_metrics
+    r_function: ComputeMetrics
+    type: "matrix (SE x SE)"
+    metric: deterministic-standard
+    threshold: 1.0e-8
+
+  - name: se_abundance_by_sn
+    r_function: ComputeSEAbundanceBySN / SmoothSEAbundances
+    type: "data.frame (spot x SE)"
+    metric: deterministic-standard
+    threshold: 1.0e-8
+
+  - name: coassociation_index
+    r_function: Coassociation (test = FALSE)
+    type: "matrix (cell state x cell state)"
+    metric: deterministic-standard
+    threshold: 1.0e-8
+
+  - name: aggregate_recover_models
+    r_function: AggregateRecoverModels
+    type: "list of matrices"
+    metric: deterministic-standard
+    threshold: 1.0e-8
+
+  - name: integrated_matrix
+    r_function: Integrate
+    type: "matrix (spatial cluster x spatial cluster)"
+    metric: deterministic-standard
+    threshold: 1.0e-8
+    note: "Deterministic when Region downsampling is off; when on, depends on the ported R RNG."
+
+  # ---------- Tier 2: decompositions / embeddings ----------
+  - name: pc_embeddings
+    r_function: GetPCList
+    type: "list of matrices (PCs x neighbourhood)"
+    metric: embedding
+    threshold: 0.95
+    note: "Procrustes on the top-20 PCs, per cell type. R uses irlba (tol 1e-5); Python uses a deterministic truncated SVD."
+
+  - name: nmf_W
+    r_function: NMFGenerateW / NMFGenerateWList
+    type: "matrix (feature x SE)"
+    metric: factorization
+    threshold: 0.95
+    note: "Hungarian-matched mean |Pearson| over factor columns. H is held fixed by the upstream NMFStrategy, so the KL objective is convex in W and the fixed point is basis-order-determined; sign is not an issue (non-negative)."
+
+  - name: nmf_H
+    r_function: NMFpredict / .nmf.predict
+    type: "matrix (cell x SE)"
+    metric: factorization
+    threshold: 0.95
+    note: "W is held fixed, so the KL objective is convex in H."
+
+  - name: deconvolute_se
+    r_function: DeconvoluteSE
+    type: "matrix (sample x SE)"
+    metric: ordinal
+    threshold: 0.99
+
+  # ---------- Tier 3: label outputs ----------
+  - name: annotate_cells
+    r_function: AnnotateCells
+    type: "character vector (per cell SE label)"
+    metric: classification
+    threshold: 0.99
+    note: "1-NN transfer from neighbourhood to cell; deterministic given the neighbourhood labels."
+
+  - name: se_labels_single_sample
+    r_function: SpatialEcoTyper
+    type: "character vector (per spatial neighbourhood)"
+    metric: clustering
+    threshold: 0.85
+    note: >-
+      END-TO-END gate on the full single-sample pipeline: metacells -> per-cell-type
+      PCA -> KNN similarity networks -> SNF -> rank transform -> Seurat PCA ->
+      SNN graph -> Louvain. Set to 0.85 rather than the taxonomy default 0.95
+      because divergence accumulates across ten stages, two of which
+      (irlba truncated SVD, Louvain modularity optimisation) are only
+      reproducible up to their own convergence tolerance. This is a deliberate,
+      pre-registered relaxation with a written reason, per PARITY_TAXONOMY.md.
+
+  - name: recover_se_labels
+    r_function: RecoverSE
+    type: "character vector (per cell SE label)"
+    metric: classification
+    threshold: 0.95
+
+  - name: conserved_se_labels
+    r_function: nmfClustering / IntegrateSpatialEcoTyper
+    type: "character vector (per spatial cluster)"
+    metric: clustering
+    threshold: 0.85
+    note: >-
+      Consensus NMF over `nrun.per.rank` random restarts. R's per-run seeds are
+      reproduced exactly through the ported R Mersenne-Twister, but the NMF
+      fixed point reached from a given seed is only equal up to convergence
+      tolerance, so consensus membership can differ for a handful of borderline
+      spatial clusters. Pre-registered at 0.85 for the same reason as
+      `se_labels_single_sample`.
+
+  # ---------- Tier 4: permutation-based statistics ----------
+  - name: coassociation_pvals
+    r_function: CoassociationTest
+    type: "named numeric vector (p-values)"
+    metric: inference
+    threshold: 0.90
+    note: "Spearman on -log10 p >= 0.90 AND top-k Jaccard >= 0.7, per engine/parity_metrics.py."
+
+  - name: colocalization_index
+    r_function: Colocalization
+    type: "matrix (cell state x cell state Z-scores)"
+    metric: ordinal
+    threshold: 0.99
+
+  - name: normalized_moran_i
+    r_function: ComputeNormalizedMoranI
+    type: "named numeric vector (Z-scores)"
+    metric: ordinal
+    threshold: 0.95
+    note: "Permutation null; R reference obtained from spdep 1.4.2."
+
+  - name: colocalization_meta
+    r_function: ColocalizationMetaAnalysis
+    type: "matrix + named numeric vector"
+    metric: ordinal
+    threshold: 0.99
+
+# --------------------------------------------------------------------
+# Explicitly OUT of numerical scope (visual functions).
+# Ported for API completeness; verified by rendering, not by a numeric gate.
+# --------------------------------------------------------------------
+not_numerically_gated:
+  - HeatmapView
+  - SpatialView
+  - CooccurrenceHeatmapView
+  - drawRectangleAnnotation
+  - getColors          # palette hex strings ARE byte-compared against pals 1.10
+  - AverageMarkerExpression.p   # the AvgExp matrix IS gated (deterministic 1e-8)
+
+held_out_fixture:
+  path: data/CRC2_subset_counts.tsv.gz
+  description: "The CRC sample is held out from all Equivalence-Agent iterations and used once, at the end, for the multi-sample integration gate."
+
+acceleration:
+  enabled: true
+  max_iterations: 20
+  must_pass_gate: true
+
+audit_class: null       # filled after the port is complete
+
+created_by: claude-opus-5 (omicverse-rebuildr agent)
+created_at: 2026-07-28

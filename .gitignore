@@ -1,0 +1,28 @@
+# Build
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Upstream R clone
+SpatialEcoTyper-ref/
+
+# Large fixtures / reference dumps
+data/*.tsv
+data/*.tsv.gz
+data/*.rds
+data/*.npz
+data/raw/
+reference_out/
+examples/SpatialEcoTyper_results/
+
+# IDE
+.vscode/
+.idea/
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
