@@ -52,16 +52,17 @@ Full audit in [`AUDIT.md`](AUDIT.md); full evidence in
 ## Install
 
 ```bash
-pip install pyspatialecotyper
-```
-
-From source:
-
-```bash
 git clone https://github.com/omicverse/py-spatialecotyper
 cd py-spatialecotyper
 pip install -e ".[dev]"
 ```
+
+A wheel and sdist are built and `twine check`-clean
+(`dist/pyspatialecotyper-0.1.0-py3-none-any.whl`), but **publication to PyPI is
+deliberately held pending a licence review**: upstream is the Stanford
+Non-Commercial Software License Agreement, not an OSI licence, and this port
+inherits that restriction (see [License](#license)). Once cleared,
+`pip install pyspatialecotyper` will work.
 
 Dependencies: `numpy`, `scipy`, `pandas`, `scikit-learn`, `matplotlib`, and
 [`nmf-rs`](https://github.com/omicverse/rust-NMF) (the omicverse Rust port of
