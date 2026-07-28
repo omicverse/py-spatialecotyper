@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyspatialecotyper"
+version = "0.1.0"
+description = "Pure-Python port of the R package SpatialEcoTyper: recurrent multicellular spatial ecotypes from single-cell spatial transcriptomics."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [
+    { name = "omicverse" },
+]
+maintainers = [
+    { name = "omicverse" },
+]
+keywords = [
+    "spatial-transcriptomics", "spatial-ecotype", "single-cell",
+    "similarity-network-fusion", "NMF", "tumor-microenvironment",
+    "MERSCOPE", "Xenium", "omicverse",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: Free for non-commercial use",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+dependencies = [
+    "numpy>=1.23",
+    "scipy>=1.10",
+    "pandas>=1.5",
+    "scikit-learn>=1.2",
+    "matplotlib>=3.6",
+    # omicverse ecosystem reuse: bit-equivalent R NMF multiplicative updates.
+    # See DISCOVERY.md; a pure-NumPy fallback keeps the package working if the
+    # Rust wheel is unavailable for a platform.
+    "nmf-rs>=0.1.0",
+]
+
+[project.optional-dependencies]
+anndata = ["anndata>=0.9"]
+dev = [
+    "pytest>=7",
+    "pyyaml>=6",
+    "jupyter",
+    "nbconvert",
+]
+
+[project.urls]
+Homepage = "https://github.com/omicverse/py-spatialecotyper"
+Source = "https://github.com/omicverse/py-spatialecotyper"
+Issues = "https://github.com/omicverse/py-spatialecotyper/issues"
+Upstream = "https://github.com/digitalcytometry/spatialecotyper"
+Paper = "https://www.nature.com/articles/s41586-026-10452-4"
+
+[tool.setuptools]
+packages = ["pyspatialecotyper"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
