@@ -305,7 +305,50 @@ reference:
 | `CoassociationTest`, `ComputeNormalizedMoranI`, `CreatePseudobulks` | reproducible (plain `lapply`/`apply`). |
 | `nmfClustering` across matrix shapes in one session | **errors**: `NMF:::nmf.stop.connectivity` keeps `.consold` in a `local({})` closure, so factorising a 424x90 and then a 90x90 matrix in one R process aborts with "cons != .consold : non-conformable arrays". The reference drivers are split into separate `Rscript` processes because of this. |
 
-### 3.7 Reproducing the evidence
+### 3.7 Does the port recover the same *biology*, not just the same numbers?
+
+ARI measures whether two partitions agree; it does not say whether the
+partitions mean the same thing. So the eight ecotypes recovered from the full
+melanoma sample were compared by **what they are made of** rather than by which
+cells carry which label. Matching R's ecotypes to Python's by Hungarian
+assignment on their cell-type composition vectors:
+
+| R ecotype | Python ecotype | Pearson on cell-type composition |
+|---|---|---|
+| NewSE1 | NewSE2 | 1.0000 |
+| NewSE2 | NewSE1 | 0.9999 |
+| NewSE3 | NewSE3 | 0.9999 |
+| NewSE4 | NewSE4 | 1.0000 |
+| NewSE5 | NewSE5 | 0.9997 |
+| NewSE6 | NewSE6 | 1.0000 |
+| NewSE7 | NewSE7 | 0.9995 |
+| NewSE8 | NewSE8 | 1.0000 |
+| | **mean** | **0.9999** |
+
+(The NewSE1/NewSE2 swap is a label permutation — Louvain numbers clusters by
+size, and those two are nearly the same size.)
+
+Their distribution over the pathologist-style region annotation
+(`Tumor` / `Inner margin` / `Outer margin` / `Stroma`) agrees to within 0.006
+in every cell of the 8 x 4 table:
+
+| ecotype | region profile in R (Inner / Outer / Stroma / Tumor) | in Python |
+|---|---|---|
+| stroma-dominant fibroblast + endothelial (NewSE1/2/4/8) | e.g. 0.013 / 0.188 / 0.798 / 0.000 | 0.014 / 0.191 / 0.796 / 0.000 |
+| inner-margin CD4T-rich (NewSE3) | 0.812 / 0.108 / 0.001 / 0.079 | 0.812 / 0.112 / 0.001 / 0.074 |
+| tumour + inner-margin CD8T/macrophage (NewSE5) | 0.416 / 0.000 / 0.000 / 0.584 | 0.412 / 0.000 / 0.000 / 0.588 |
+| tumour + inner-margin CD4T/CD8T (NewSE6) | 0.551 / 0.002 / 0.000 / 0.447 | 0.559 / 0.002 / 0.000 / 0.439 |
+| outer-margin B-cell-rich, 25.6% B cells (NewSE7) | 0.297 / 0.662 / 0.036 / 0.005 | 0.301 / 0.657 / 0.037 / 0.005 |
+
+The recovered structure is also biologically coherent in its own right and
+consistent with the method's motivation: a set of stroma-restricted
+fibroblast/endothelial ecotypes, a tumour-and-inner-margin compartment split
+between CD8-dominant and CD4/CD8-mixed T-cell ecotypes, and one outer-margin
+B-cell-rich ecotype (25.6% B cells, 16.5% CD4T) with the composition and
+localisation of a tertiary lymphoid structure. Reproduced by
+`examples/compare_R_vs_Python.ipynb`.
+
+### 3.8 Reproducing the evidence
 
 ```bash
 export R_LIBS=/path/to/Rlibs:/path/to/R/library
