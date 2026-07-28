@@ -220,7 +220,15 @@ number, so the gate cannot be quietly widened.
    redistributed. `recover_se` and `deconvolute_se` require explicit `Ws` / `W`;
    the default-model branch, including the published `SE01..SE11 → SE1..SE9`
    relabelling, is not reachable without those files.
-7. **`nmfClustering` cophenetic coefficient** differs from R in the 5th decimal
+7. **`ComputeMetrics` drops single-SE samples in R; the port keeps them.**
+   When a sample contains exactly one distinct true SE, R's
+   `Precision[, -1]` degrades the data.frame to an unnamed vector, the
+   subsequent `match(ses, rownames(.))` is all `NA`, and that sample silently
+   vanishes from the cross-sample average. Measured effect on a deliberately
+   degenerate partition containing one single-SE tile: `max abs` **0.0878**.
+   The port does not reproduce this; on any input without a single-SE sample
+   the two agree at 5.6e-16.
+8. **`nmfClustering` cophenetic coefficient** differs from R in the 5th decimal
    (0.960832 vs 0.960812) on identical consensus matrices — `hclust` and
    `scipy.cluster.hierarchy.average` order equal merges differently. Cluster
    assignments are unaffected (ARI 1.000).

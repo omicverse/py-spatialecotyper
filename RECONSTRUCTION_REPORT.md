@@ -467,12 +467,22 @@ is exactly where the port's one open divergence already lives (§3.4).
 6. **Bundled recovery models are not redistributed** (§2.4), so the
    default-model branches of `RecoverSE`, `DeconvoluteSE` and
    `AverageMarkerExpression` are unreachable from this package alone.
-7. **Upstream bugs deliberately reproduced, not fixed**: `.dominateset`'s
+7. **One upstream bug deliberately NOT reproduced**: `ComputeMetrics` silently
+   discards any sample that contains exactly one distinct true SE. In R that
+   sample's `Precision` pivot has a single value column, `Precision[, -1]`
+   drops the data.frame to an unnamed vector, `match(ses, rownames(.))` is all
+   `NA`, and the sample vanishes from the cross-sample average with no warning.
+   Measured effect on a deliberately degenerate 4x4 tile partition where one
+   tile is single-SE: **max abs 0.0878**. The port keeps the sample. This is
+   reported as a documented difference, not gated: the gated 3x3 partition
+   contains no single-SE tile, so the quirk never fires there (5.55e-16).
+   Reproduced in `examples/function_by_function_R_parity.ipynb`.
+8. **Upstream bugs deliberately reproduced, not fixed**: `.dominateset`'s
    `1:(length(x) - KK)` producing `c(1, 0)` when `length(x) == KK` (zeroes the
    single smallest element rather than none), and aborting when
    `length(x) < KK`; the duplicated `kovesi.linear_bgyw_15_100_c67` at
    continuous palettes 9 and 14. Reproducing them keeps the port a mirror.
-8. **Licence.** Upstream is the Stanford Non-Commercial Software License
+9. **Licence.** Upstream is the Stanford Non-Commercial Software License
    Agreement, not an OSI licence. This port is a derivative work and inherits
    the non-commercial restriction. **Publication to PyPI should be reviewed
    against that restriction before release** — PyPI's terms require a licence
