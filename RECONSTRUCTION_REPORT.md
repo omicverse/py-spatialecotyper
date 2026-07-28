@@ -244,7 +244,11 @@ one of the tied pair fits into the neighbour list. `RANN`'s ANN kd-tree and
 `scipy.spatial.cKDTree` choose different members of the tie, and the choice
 depends on tree-construction order, not on a rule either library documents.
 
-For DC on the canonical fixture: **20 of 5,100 stored entries differ — 99.61%
+Aggregated over all nine networks on the canonical fixture: **72 of 88,436
+stored entries differ — 99.919% identical**; the worst cell type is NK at
+34/3,867 (99.12%).
+
+For DC on the canonical fixture: **20 of 5,110 stored entries differ — 99.61%
 are identical**, and the differing entries come in pairs of the form
 `(R has [3,250] and [4,14]; Python has [3,14] and [4,250])` carrying the *same
 value*, i.e. a relabelling of which of two identical neighbourhoods was kept.

@@ -189,8 +189,9 @@ number, so the gate cannot be quietly widened.
    where only one of them fits, and `RANN`'s ANN kd-tree and
    `scipy.spatial.cKDTree` break the tie differently. Both are correct k-NN.
    Measured, feeding R's own PC embeddings to both sides:
-   on the 6k-cell fixture, 5 of 9 cell types diverge, `max abs` 0.11 on a
-   0–0.5 scale, 99.61% of DC's stored entries identical; on the full 27.9k-cell
+   on the 6k-cell fixture, 5 of 9 cell types diverge, `max abs` 0.108 on a
+   0-0.5 scale, and 72 of 88,436 stored entries differ (99.919% identical);
+   on the full 27.9k-cell
    fixture, **314 of 483,550 stored entries differ — 99.935% identical**, with
    `nnz` equal in both implementations for all 9 cell types. Downstream, `SNF2`
    on R's own networks still matches at 4.2e-17 and the end-to-end ARI is 0.98.
