@@ -58,8 +58,74 @@ from .palettes import get_colors
 from .plotting import (cooccurrence_heatmap_view, draw_rectangle_annotation,
                        heatmap_view, spatial_view)
 
+# --- literal R-name aliases -------------------------------------------------
+# Five R exports contain acronym runs or the proper noun "EcoTyper", where a
+# mechanical CamelCase -> snake_case mapping and a readable Python name
+# disagree (`SpatialEcoTyper` -> `spatial_eco_typer` vs `spatial_ecotyper`).
+# Both spellings are bound so that code translated mechanically from R keeps
+# working, and so the R-function coverage audit resolves every export.
+spatial_eco_typer = spatial_ecotyper
+integrate_spatial_eco_typer = integrate_spatial_ecotyper
+multi_spatial_eco_typer = multi_spatial_ecotyper
+infer_n_cells = infer_ncells
+nm_fpredict = nmf_predict            # NMFpredict, mechanical transliteration
+compute_f_cs = compute_fcs           # ComputeFCs
+
+R_FUNCTION_MAP = {
+    "AggregateRecoverModels": "aggregate_recover_models",
+    "AnnotateCells": "annotate_cells",
+    "AverageMarkerExpression": "average_marker_expression",
+    "Coassociation": "coassociation",
+    "CoassociationTest": "coassociation_test",
+    "Colocalization": "colocalization",
+    "ColocalizationMetaAnalysis": "colocalization_meta_analysis",
+    "ComputeMetrics": "compute_metrics",
+    "ComputeNormalizedMoranI": "compute_normalized_moran_i",
+    "ComputeSEAbundanceBySN": "compute_se_abundance_by_sn",
+    "CooccurrenceHeatmapView": "cooccurrence_heatmap_view",
+    "CreatePseudobulks": "create_pseudobulks",
+    "DeconvoluteSE": "deconvolute_se",
+    "GetSpatialMetacells": "get_spatial_metacells",
+    "HeatmapView": "heatmap_view",
+    "InferNCells": "infer_ncells",
+    "IntegrateSpatialEcoTyper": "integrate_spatial_ecotyper",
+    "LoocvPredict": "loocv_predict",
+    "MultiSpatialEcoTyper": "multi_spatial_ecotyper",
+    "NMFGenerateW": "nmf_generate_w",
+    "NMFGenerateWList": "nmf_generate_w_list",
+    "NMFpredict": "nmf_predict",
+    "PreprocessST": "preprocess_st",
+    "RecoverSE": "recover_se",
+    "SNF2": "snf2",
+    "SmoothSEAbundances": "smooth_se_abundances",
+    "SpatialEcoTyper": "spatial_ecotyper",
+    "SpatialView": "spatial_view",
+    "Znorm": "znorm",
+    "drawRectangleAnnotation": "draw_rectangle_annotation",
+    "getColors": "get_colors",
+    "matrixMultiply": "matrix_multiply",
+    "mostFrequent": "most_frequent",
+    "nmfClustering": "nmf_clustering",
+    "rankSparse": "rank_sparse",
+    # internal helpers reachable from the exports
+    "ComputeFCs": "compute_fcs",
+    "GetKnnWeights": "get_knn_weights",
+    "GetPCList": "get_pc_list",
+    "GetSNList": "get_sn_list",
+    "Integrate": "integrate",
+    "aggregateByWeights": "aggregate_by_weights",
+    "buildKNNWeights": "build_knn_weights",
+    "fillspots": "fillspots",
+    "getSN": "get_sn",
+    ".dominateset": "dominateset",
+    ".colocalization": "stats._colocalization",
+    ".moran": "stats._moran",
+    ".nmf.predict": "nmf._nmf_predict",
+    "PartitionTissue": "partition_tissue",
+}
+
 __all__ = [
-    "__version__",
+    "__version__", "R_FUNCTION_MAP",
     # class API
     "SpatialEcoTyper", "SpatialEcoTyperResult",
     # single sample
@@ -86,5 +152,8 @@ __all__ = [
     "create_pseudobulks", "infer_ncells", "partition_tissue",
     # visualisation
     "get_colors", "spatial_view", "heatmap_view",
+    # literal R-name aliases
+    "spatial_eco_typer", "integrate_spatial_eco_typer",
+    "multi_spatial_eco_typer", "infer_n_cells", "nm_fpredict", "compute_f_cs",
     "cooccurrence_heatmap_view", "draw_rectangle_annotation",
 ]

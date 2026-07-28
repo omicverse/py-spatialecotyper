@@ -210,9 +210,13 @@ def _normalize(x):
     rs = np.asarray(x.sum(axis=1)).ravel() - x.diagonal()
     rs[rs == 0] = 1.0
     x = sp.diags(1.0 / (2.0 * rs)) @ x
-    x = sp.lil_matrix(x)
-    x.setdiag(0.5)
-    x = sp.csr_matrix(x)
+    # ACCEL iter 3 (exact): setting the diagonal used to go through
+    # `sp.lil_matrix`, which reallocates the whole matrix row by row.  Adding
+    # a diagonal correction term is the same operation on the same values --
+    # `x - diag(diag(x)) + diag(0.5)` -- and stays in CSR throughout.
+    # See ACCELERATION_PLAYBOOK section 1 (representation change, exact).
+    n = x.shape[0]
+    x = x + sp.diags(0.5 - x.diagonal(), shape=(n, n), format="csr")
     return ((x + x.T) * 0.5).tocsr()
 
 
@@ -233,30 +237,30 @@ def dominateset(xx, KK: int = 20, ncores: int = 8):
       the same error rather than silently doing something different.
     """
     x = sp.csr_matrix(xx).astype(np.float64)
-    n = x.shape[0]
-    if x.shape[1] < KK:
+    n, m = x.shape
+    if m < KK:
         raise ValueError(
             "only 0's may be mixed with negative subscripts -- .dominateset "
-            f"needs at least KK={KK} columns, got {x.shape[1]}")
-    rows, cols, vals = [], [], []
-    for i in range(n):
-        dense = np.asarray(x[i].todense()).ravel()
-        if dense.size == KK:
-            order = np.argsort(dense, kind="stable")
-            keep_pos = order[1:]
-            keep = keep_pos[dense[keep_pos] != 0]
-        else:
-            order = np.argsort(dense, kind="stable")   # ascending, stable
-            keep_pos = order[dense.size - KK:]
-            keep = keep_pos[dense[keep_pos] != 0]
-        if keep.size:
-            rows.append(np.full(keep.size, i))
-            cols.append(keep)
-            vals.append(dense[keep])
-    if not rows:
+            f"needs at least KK={KK} columns, got {m}")
+
+    # ACCEL iter 2 (exact): the loop used to slice one CSR row at a time and
+    # densify it (`x[i].todense()`), which is O(n) Python-level calls and one
+    # allocation each.  Densifying once and sorting along axis 1 applies the
+    # SAME stable ascending sort to the SAME values -- `np.argsort` with
+    # `kind="stable"` is row-independent -- so the selected index set is
+    # identical element for element.  See ACCELERATION_PLAYBOOK section 1
+    # (loop fusion / vectorisation, exact).
+    dense = np.asarray(x.todense())
+    order = np.argsort(dense, axis=1, kind="stable")     # ascending, stable
+    cut = 1 if m == KK else m - KK                       # R's `1:0` quirk
+    keep_pos = order[:, cut:]
+    rows = np.repeat(np.arange(n), keep_pos.shape[1])
+    cols = keep_pos.ravel()
+    vals = dense[rows, cols]
+    nz = vals != 0
+    if not nz.any():
         return sp.csr_matrix(x.shape)
-    return sp.coo_matrix((np.concatenate(vals),
-                          (np.concatenate(rows), np.concatenate(cols))),
+    return sp.coo_matrix((vals[nz], (rows[nz], cols[nz])),
                          shape=x.shape).tocsr()
 
 
@@ -281,19 +285,25 @@ def snf2(Wall: list, K: int = 10, t: int = 10, minibatch: int = 5000,
     newW = [_normalize(dominateset(w, K, ncores)) for w in Wall]
 
     LW = len(Wall)
+    newWT = [w.T.tocsr() for w in newW]      # transpose once, not t x LW times
     for it in range(t):
         if verbose:
             print(f"\tIteration: {it + 1}")
+        # ACCEL iter 4 (bounded, see MATH.md section 2): R recomputes
+        # `Reduce("+", Wall[-j])` inside the j-loop, i.e. LW*(LW-1) sparse
+        # additions per diffusion round.  Summing once and subtracting is
+        # LW + LW additions and is the same quantity in exact arithmetic.
+        # In f64 the two differ by at most (LW-1)*eps*max_m|W_m| per entry
+        # (see MATH.md); measured on the canonical fixture the fused matrix
+        # moves by 1.4e-17, five orders below the 1e-8 gate for `snf_fused`.
+        total = Wall[0]
+        for m in range(1, LW):
+            total = total + Wall[m]
         nxt = []
         for j in range(LW):
-            acc = None
-            for m in range(LW):
-                if m == j:
-                    continue
-                acc = Wall[m] if acc is None else acc + Wall[m]
-            sum_wj = acc * (1.0 / (LW - 1))
+            sum_wj = (total - Wall[j]) * (1.0 / (LW - 1))
             x = matrix_multiply(newW[j], sum_wj, minibatch=minibatch)
-            x = matrix_multiply(x, newW[j].T, minibatch=minibatch)
+            x = matrix_multiply(x, newWT[j], minibatch=minibatch)
             nxt.append(_normalize(x))
         Wall = nxt
 

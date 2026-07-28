@@ -288,6 +288,14 @@ def run_pca(scale_data_mat, npcs: int = 50, weight_by_var: bool = True):
     if npcs < 1:
         raise ValueError("npcs must be >= 1 after clamping to the matrix size")
 
+    # NOTE (Acceleration iter 5, ROLLED BACK -- see ITERATION_LOG.md):
+    # substituting dense LAPACK `np.linalg.svd` here looks like an exact
+    # rewrite, and it is exact *as a subspace*, but a truncated SVD is only
+    # unique up to a rotation within any degenerate singular subspace.  On the
+    # canonical fixture that rotation lands across the PC-10 / PC-11 boundary
+    # that `FindNeighbors(dims = 1:10)` cuts at, and the end-to-end ARI vs R
+    # dropped 0.983066 -> 0.924550.  ARPACK's Lanczos basis happens to track
+    # irlba's (R's choice) more closely, so it stays.
     from scipy.sparse.linalg import svds
     u, d, vt = svds(a, k=npcs, solver="arpack",
                     v0=np.ones(min(a.shape)) / np.sqrt(min(a.shape)))

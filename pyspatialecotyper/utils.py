@@ -82,11 +82,34 @@ def rank_sparse(mat):
     m = sp.csc_matrix(mat, copy=True).astype(np.float64)
     m.eliminate_zeros()                       # drop0()
     indptr, data = m.indptr, m.data
+
+    # ACCEL iter 6 (exact): the per-column `rankdata` loop is replaced by one
+    # global stable argsort of (column, value) pairs plus a vectorised
+    # average-ties pass.  Ranking within a column is order-isomorphic to
+    # ranking the whole array keyed first by column, so the resulting ranks are
+    # identical -- including the average assigned to a tie group, which is
+    # computed from the same group boundaries.
+    # See ACCELERATION_PLAYBOOK section 1 (loop fusion, exact).
+    ncol = m.shape[1]
+    col_of = np.repeat(np.arange(ncol), np.diff(indptr))
+    order = np.lexsort((data, col_of))        # stable: by column, then value
+    sorted_col = col_of[order]
+    sorted_val = data[order]
+    # position within column, 1-based
+    starts = indptr[:-1]
+    within = np.arange(data.size) - starts[sorted_col]
+    ranks = within + 1.0
+    # average ties: a tie group is a maximal run of equal (col, value)
+    new_group = np.ones(data.size, dtype=bool)
+    if data.size > 1:
+        new_group[1:] = (sorted_col[1:] != sorted_col[:-1]) | \
+                        (sorted_val[1:] != sorted_val[:-1])
+    gid = np.cumsum(new_group) - 1
+    gsum = np.bincount(gid, weights=ranks)
+    gcnt = np.bincount(gid)
+    ranks = (gsum / gcnt)[gid]
     out = np.empty_like(data)
-    for j in range(m.shape[1]):
-        lo, hi = indptr[j], indptr[j + 1]
-        if hi > lo:
-            out[lo:hi] = r_rank(data[lo:hi])
+    out[order] = ranks
     m.data = out / m.shape[0]
     return m
 
