@@ -19,7 +19,12 @@ import scipy.sparse as sp
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, "/scratch/users/steorra/analysis/omicverse_dev/omicverse-rebuildr")
+# The rebuildr kit is a development-time dependency living outside this repo.
+# Point at it with OMICVERSE_REBUILDR when running the staged parity check; the
+# hardcoded path this replaced only existed on one machine.
+_kit = os.environ.get("OMICVERSE_REBUILDR")
+if _kit:
+    sys.path.insert(0, _kit)
 
 import rio
 from pyspatialecotyper import metacells, network, preprocessing, seuratcompat, utils, core

@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import tempfile
 
 import numpy as np
 import pandas as pd
@@ -45,9 +46,16 @@ from pyspatialecotyper.palettes import (
 
 _REPO = pathlib.Path(__file__).resolve().parents[1]
 _REF = _REPO / "reference_out" / "palettes.json"
-_TMP = pathlib.Path("/scratch/users/steorra/tmp")
+# Scratch space for the figures these tests render. This used to be the absolute
+# path of the machine the port was developed on, which existed there and nowhere
+# else: the suite passed locally and could not even be *collected* on CI, where
+# the import raised PermissionError on /scratch. Anything host-specific belongs
+# in an environment variable with a portable default, never in the source.
+_TMP = pathlib.Path(os.environ.get("PYSPATIALECOTYPER_TMPDIR")
+                    or tempfile.gettempdir()) / "pyspatialecotyper"
 
-os.environ.setdefault("MPLCONFIGDIR", "/scratch/users/steorra/.cache/matplotlib")
+os.environ.setdefault("MPLCONFIGDIR", str(_TMP / "matplotlib"))
+pathlib.Path(os.environ["MPLCONFIGDIR"]).mkdir(parents=True, exist_ok=True)
 
 
 def _load_reference():
