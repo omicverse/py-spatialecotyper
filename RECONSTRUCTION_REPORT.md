@@ -236,10 +236,34 @@ one of the tied pair fits into the neighbour list. `RANN`'s ANN kd-tree and
 `scipy.spatial.cKDTree` choose different members of the tie, and the choice
 depends on tree-construction order, not on a rule either library documents.
 
-For DC: **20 of 5,100 stored entries differ — 99.61% are identical**, and the
-differing entries are pairs of the form `(R has [3,250] and [4,14]; Python has
-[3,14] and [4,250])` with the *same value*, i.e. a relabelling of which of two
-identical neighbourhoods was kept.
+For DC on the canonical fixture: **20 of 5,100 stored entries differ — 99.61%
+are identical**, and the differing entries come in pairs of the form
+`(R has [3,250] and [4,14]; Python has [3,14] and [4,250])` carrying the *same
+value*, i.e. a relabelling of which of two identical neighbourhoods was kept.
+
+On the **full** 27,907-cell fixture the max abs difference is larger per cell
+type (0.128–0.196) but the affected fraction is smaller, because there are more
+neighbourhoods competing for the same 50 slots:
+
+| cell type | stored entries | differing (> 1e-8) | identical |
+|---|---|---|---|
+| B | 27,300 | 14 | 99.949% |
+| CD4T | 64,950 | 20 | 99.969% |
+| CD8T | 56,550 | 16 | 99.972% |
+| DC | 30,900 | 76 | 99.754% |
+| Endothelial | 72,700 | 42 | 99.942% |
+| Fibroblast | 103,200 | 6 | 99.994% |
+| Macrophage | 88,400 | 54 | 99.939% |
+| NK | 15,200 | 64 | 99.579% |
+| Plasma | 24,350 | 22 | 99.910% |
+| **total** | **483,550** | **314** | **99.935%** |
+
+Every network has exactly the same number of stored entries in both
+implementations (`nnz_R == nnz_Py` for all nine), which is what one expects from
+a pure tie-relabelling rather than a different neighbour-selection rule. Part of
+the full-fixture spread is also a floor from the reference dump itself: the PC
+embeddings are written by `data.table::fwrite` at 15 significant digits, so
+near-ties separated by less than ~1e-15 relative cannot survive the round trip.
 
 **What was not done.** The gate was not widened, and the algorithm was not
 tuned. Reproducing ANN's tie order would require porting ANN's kd-tree

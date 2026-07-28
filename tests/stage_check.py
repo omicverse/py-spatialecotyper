@@ -76,8 +76,12 @@ def main(outdir):
            len(set(ncmeta.index) | set(ref_ncmeta.index)), 1.0, False)
     if same_ids:
         a = ncmeta.loc[ref_ncmeta.index]
-        report("spot grid X", "max|d|", maxabs(ref_ncmeta["X"], a["X"]), 1e-12)
-        report("spot grid Y", "max|d|", maxabs(ref_ncmeta["Y"], a["Y"]), 1e-12)
+        # 1e-9, not 1e-12: the coordinates are O(1e3-1e4) and `data.table::fwrite`
+        # writes 15 significant digits, so the dump itself carries ~5e-12 of
+        # absolute error at this magnitude. That is a serialisation floor, not a
+        # computation difference -- relative error is ~1e-15.
+        report("spot grid X", "max|d|", maxabs(ref_ncmeta["X"], a["X"]), 1e-9)
+        report("spot grid Y", "max|d|", maxabs(ref_ncmeta["Y"], a["Y"]), 1e-9)
         for c in ("CellType", "Region"):
             if c in ref_ncmeta.columns and c in a.columns:
                 agree = float((ref_ncmeta[c].astype(str).to_numpy()

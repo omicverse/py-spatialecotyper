@@ -182,15 +182,19 @@ number, so the gate cannot be quietly widened.
 
 ## Known divergences from R (measured, not hand-waved)
 
-1. **`getSN` on tied nearest neighbours.** 5 of 9 cell types in the canonical
-   fixture contain spatial neighbourhoods whose cell-type-specific metacell
-   profiles are *exactly identical* (adjacent grid spots drawing the same
-   `k = 20` nearest cells of a rare type). Their distances tie at the k-th
-   neighbour boundary and `RANN`'s ANN kd-tree and `scipy.spatial.cKDTree`
-   break the tie differently. Effect: 20 of 5100 stored entries differ for DC
-   (99.6% identical); `max abs` 0.11 on a 0–0.5 scale. Both answers are correct
-   k-NN; the tie is inherent. This is the one pre-registered gate the port does
-   **not** clear, and it is reported as a failure rather than papered over.
+1. **`getSN` on tied nearest neighbours — the one gate this port fails.**
+   Spatial neighbourhoods can have *exactly identical* cell-type-specific
+   metacell profiles (adjacent grid spots drawing the same `k = 20` nearest
+   cells of a rare type). Their distances tie at the k-th neighbour boundary,
+   where only one of them fits, and `RANN`'s ANN kd-tree and
+   `scipy.spatial.cKDTree` break the tie differently. Both are correct k-NN.
+   Measured, feeding R's own PC embeddings to both sides:
+   on the 6k-cell fixture, 5 of 9 cell types diverge, `max abs` 0.11 on a
+   0–0.5 scale, 99.61% of DC's stored entries identical; on the full 27.9k-cell
+   fixture, **314 of 483,550 stored entries differ — 99.935% identical**, with
+   `nnz` equal in both implementations for all 9 cell types. Downstream, `SNF2`
+   on R's own networks still matches at 4.2e-17 and the end-to-end ARI is 0.98.
+   Reported as a failure rather than papered over; the gate was not widened.
 2. **`FindNeighbors` uses Annoy in Seurat 5, exact k-NN here.** Annoy is
    approximate; measured on the full fixture, 95.5% of cells get an identical
    neighbour set and 99.7% of (cell, neighbour) pairs are shared, and the exact

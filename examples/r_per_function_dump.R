@@ -127,7 +127,9 @@ if (part == "nmfclust") {
 #
 #  * the `ncells` cells closest to the tissue centroid (a contiguous
 #    spatial crop, the same rule tests/r_reference_driver.R uses);
-#  * pseudo-samples from a 4 x 4 spatial grid;
+#  * pseudo-samples from a 3 x 3 spatial grid (`Sample`), plus a finer 4 x 4
+#    grid (`SampleFine`) that deliberately contains a sample carrying only one
+#    true SE -- see the ComputeMetrics block for what that exposes;
 #  * SE labels from coarse diagonal spatial stripes (so they are spatially
 #    autocorrelated and every (SE, CellType) state survives Colocalization's
 #    min.cell filter under permutation);
@@ -140,11 +142,15 @@ build_fixture <- function(meta_f, ncells) {
   d  <- (meta$X - cx)^2 + (meta$Y - cy)^2
   keep <- sort(order(d)[seq_len(min(ncells, nrow(meta)))])
   m <- meta[keep, ]
-  gx <- pmin(3L, as.integer(floor((m$X - min(m$X)) /
-                                  ((max(m$X) - min(m$X)) * 1.000001 / 4))))
-  gy <- pmin(3L, as.integer(floor((m$Y - min(m$Y)) /
-                                  ((max(m$Y) - min(m$Y)) * 1.000001 / 4))))
-  m$Sample <- paste0("Sample", gx * 4L + gy + 1L)
+  grid_ids <- function(n) {
+    gx <- pmin(n - 1L, as.integer(floor((m$X - min(m$X)) /
+                                        ((max(m$X) - min(m$X)) * 1.000001 / n))))
+    gy <- pmin(n - 1L, as.integer(floor((m$Y - min(m$Y)) /
+                                        ((max(m$Y) - min(m$Y)) * 1.000001 / n))))
+    paste0("Sample", gx * n + gy + 1L)
+  }
+  m$Sample     <- grid_ids(3L)
+  m$SampleFine <- grid_ids(4L)
   m$SE  <- paste0("SE", 1L + ((round(m$X / 250) + round(m$Y / 250)) %% 4L))
   m$SEf <- paste0("SE", 1L + ((round(m$X / 150) + 3L * round(m$Y / 150)) %% 8L))
   m$SEn <- m$SEf
@@ -454,6 +460,20 @@ dump_dense(ComputeMetrics(m, SE = "SE", Pred = "cvPred", CellType = "CellType",
 dump_dense(ComputeMetrics(m, SE = "SE", Pred = "cvPred", CellType = NULL,
                           Sample = NULL, metric = "F1"),
            "computemetrics_f1_nosample")
+# Degenerate partition: `SampleFine` contains one 4x4 tile whose cells all carry
+# the SAME true SE.  In that tile the Precision pivot_wider has a single value
+# column, so R's `Precision[, -1]` drops the data.frame to an unnamed VECTOR,
+# `match(ses, rownames(.))` is then all NA and the whole tile is discarded from
+# the cross-sample average.  Dumped so Notebook 3 can measure that quirk rather
+# than assert it.
+dump_dense(ComputeMetrics(m, SE = "SE", Pred = "cvPred", CellType = NULL,
+                          Sample = "SampleFine", metric = "F1"),
+           "computemetrics_f1_degenerate")
+dump_json(list(
+  n_samples = length(unique(m$SampleFine)),
+  degenerate_samples = sort(names(which(tapply(m$SE, m$SampleFine,
+                                               function(x) length(unique(x))) == 1)))),
+  "computemetrics_degenerate_info")
 
 # --------------------------------------------------------------------
 # 12. ComputeSEAbundanceBySN + SmoothSEAbundances
